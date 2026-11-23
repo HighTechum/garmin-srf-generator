@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garmin 360° Vehicle Sprite & SRF Generator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #ef4444;
+      --accent-hover: #dc2626;
+      --secondary: #334155;
+      --secondary-hover: #475569;
+      --green: #22c55e;
+      --amber: #f59e0b;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* Compact outer padding designed specifically for Google Sites embed iframes */
+    .embed-wrapper {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .header {
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 820px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      color: #f1f5f9;
+    }
+
+    /* Vehicle Identity (Color / Make / Model) */
+    .vehicle-id-box {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .vehicle-id-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    @media (max-width: 460px) {
+      .vehicle-id-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mini-field label {
+      display: block;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .mini-field input {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .mini-field input:focus {
+      outline: 2px solid var(--accent);
+      border-color: transparent;
+    }
+
+    .filename-preview {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filename-preview span {
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+    }
+
+    .dropzone {
+      border: 2px dashed #475569;
+      border-radius: 10px;
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      background: rgba(15, 23, 42, 0.55);
+      margin-bottom: 16px;
+      user-select: none;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .dropzone p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+    }
+
+    .dropzone small {
+      color: var(--muted);
+      font-size: 0.78rem;
+      display: block;
+    }
+
+    .control {
+      margin-bottom: 13px;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.84rem;
+      margin-bottom: 5px;
+      color: #e2e8f0;
+    }
+
+    .control input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .control select, .control input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.86rem;
+    }
+
+    .control select:focus, .control input[type="text"]:focus {
+      outline: 2px solid var(--accent);
+      border-color: transparent;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      margin-bottom: 14px;
+      cursor: pointer;
+      color: #e2e8f0;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.15s, opacity 0.15s;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: #f1f5f9;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--secondary-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .preview-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .preview-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .preview-box {
+      background-image:
+        linear-gradient(45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1e293b 75%),
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-color: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      height: 185px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .up-arrow-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.24;
+      color: #ffffff;
+    }
+
+    .corner-rot-btn {
+      position: absolute;
+      bottom: 8px;
+      z-index: 3;
+      background: rgba(15, 23, 42, 0.88);
+      color: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+
+    .corner-rot-btn:hover {
+      background: rgba(239, 68, 68, 0.22);
+      border-color: var(--accent);
+    }
+
+    .corner-rot-left {
+      left: 8px;
+    }
+
+    .corner-rot-right {
+      right: 8px;
+    }
+
+    .preview-tag {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 3;
+      background: rgba(15, 23, 42, 0.88);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      color: var(--muted);
+      border: 1px solid rgba(51, 65, 85, 0.7);
+    }
+
+    .sheet-scroll {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background-image:
+        linear-gradient(45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #1e293b 75%),
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-color: #0b1120;
+      padding: 10px;
+    }
+
+    /* Styled scrollbar for clean Google Sites appearance */
+    .sheet-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .sheet-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+      border-radius: 4px;
+    }
+    .sheet-scroll::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+
+    .status {
+      font-size: 0.83rem;
+      color: var(--green);
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    .status.error {
+      color: var(--amber);
+    }
+
+    .fallback-box {
+      display: none;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid #475569;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+    }
+
+    .fallback-box img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #0b1120;
+    }
+
+    .cli-box {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    code {
+      background: #0b1120;
+      color: #f8fafc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="embed-wrapper">
+    <div class="header">
+      <h1>Garmin 360° Vehicle Sprite &amp; .SRF Generator</h1>
+      <p class="subtitle">Upload a top-down vehicle image to strip its background, rotate it across 36 angles (10° steps), and export a ready-to-use Garmin <code>.srf</code> vehicle file or <code>.png</code> sprite sheet.</p>
+    </div>
+
+    <div class="grid">
+      <!-- Controls Card -->
+      <div class="card">
+        <h2>1. Vehicle Info &amp; Upload</h2>
+
+        <!-- Color / Make / Model Naming Builder -->
+        <div class="vehicle-id-box">
+          <div class="vehicle-id-grid">
+            <div class="mini-field">
+              <label for="colorInput">Color</label>
+              <input type="text" id="colorInput" placeholder="e.g. Red" />
+            </div>
+            <div class="mini-field">
+              <label for="makeInput">Make</label>
+              <input type="text" id="makeInput" placeholder="e.g. Honda" />
+            </div>
+            <div class="mini-field">
+              <label for="modelInput">Model</label>
+              <input type="text" id="modelInput" placeholder="e.g. Rancher" />
+            </div>
+          </div>
+          <div class="filename-preview">
+            Export Filename: <span id="exportNamePreview">myvehicle.srf</span>
+          </div>
+        </div>
+
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload vehicle image or SRF file">
+          <p><strong>Click or drag vehicle image or .SRF here</strong></p>
+          <small>Supports PNG, JPG, WEBP, and Garmin .SRF</small>
+          <input type="file" id="fileInput" accept="image/*,.srf" hidden />
+        </div>
+
+        <div class="control">
+          <label for="formatSelect"><span>Garmin Vehicle Format</span></label>
+          <select id="formatSelect">
+            <option value="2881x160">Standard 3D + 2D Overhead (2881 × 160 / v2.00)</option>
+            <option value="2880x150">Newer Garmin 80×80 + 70×70 (2880 × 150 / v2.20)</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="tolerance"><span>Background Removal Tolerance</span><span id="tolVal">35</span></label>
+          <input type="range" id="tolerance" min="0" max="120" value="35" />
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="floodFill" checked />
+          <span>Edge flood-fill only (protects inner white highlights)</span>
+        </label>
+
+        <div class="control">
+          <label for="tileScale"><span>Vehicle Size in Tile (%)</span><span id="scaleVal">88%</span></label>
+          <input type="range" id="tileScale" min="50" max="100" value="88" />
+        </div>
+
+        <div class="control">
+          <label for="rotDir"><span>Rotation Direction</span></label>
+          <select id="rotDir">
+            <option value="cw">Clockwise (0°, 10°, 20° ... 350°)</option>
+            <option value="ccw">Counter-Clockwise (0°, -10°, -20° ... -350°)</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="startOffset"><span>Initial Angle Offset</span></label>
+          <select id="startOffset">
+            <option value="0">0° (Image already points UP / North)</option>
+            <option value="180">180° (Flip upside-down)</option>
+            <option value="90">90° Right</option>
+            <option value="-90">90° Left</option>
+          </select>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="downloadSrfBtn" disabled>Download myvehicle.srf</button>
+          <button class="btn btn-secondary" id="downloadPngBtn" disabled>Download myvehicle.png</button>
+          <button class="btn btn-secondary" id="openTabBtn" disabled>Open PNG in New Tab (Iframe Fallback)</button>
+        </div>
+
+        <div class="status" id="statusText"></div>
+
+        <!-- Google Sites Iframe Fallback Box -->
+        <div class="fallback-box" id="fallbackBox">
+          <strong>Google Sites Download Fallback:</strong> If your browser blocked the automatic download inside the embedded frame, right-click the image below and select <em>"Save image as..."</em>:
+          <img id="fallbackImg" alt="Generated Garmin Sprite Sheet" />
+        </div>
+      </div>
+
+      <!-- Preview & Output Card -->
+      <div class="card">
+        <h2>2. Live 360° Preview &amp; Sprite Output</h2>
+
+        <div class="preview-row">
+          <div class="preview-box">
+            <span class="preview-tag">Cropped Transparent Sprite</span>
+            <div class="up-arrow-overlay" aria-hidden="true">
+              <svg width="110" height="110" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L4.5 10.5H9.5V21H14.5V10.5H19.5L12 2Z" />
+              </svg>
+            </div>
+            <canvas id="cleanPreview" width="140" height="140"></canvas>
+            <button type="button" class="corner-rot-btn corner-rot-left" id="rotLeftCornerBtn" title="Rotate 90° Left (Counter-Clockwise)">↺ 90° L</button>
+            <button type="button" class="corner-rot-btn corner-rot-right" id="rotRightCornerBtn" title="Rotate 90° Right (Clockwise)">90° R ↻</button>
+          </div>
+          <div class="preview-box">
+            <span class="preview-tag" id="spinTag">Slow 360° Preview (0°)</span>
+            <canvas id="spinPreview" width="140" height="140"></canvas>
+          </div>
+        </div>
+
+        <p style="font-size: 0.84rem; color: var(--muted); margin: 0 0 8px;">
+          Generated Sprite Sheet (scroll horizontally to inspect all 36 frames):
+        </p>
+
+        <div class="sheet-scroll">
+          <canvas id="sheetCanvas" width="2881" height="160"></canvas>
+        </div>
+
+        <div class="cli-box">
+          <strong>Direct Garmin Installation:</strong> Copy the downloaded <code id="srfFileHint">myvehicle.srf</code> directly into the <code>\Garmin\Vehicle\</code> folder on your Garmin GPS device (no external <code>png2srf</code> command-line tool required!).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const formatSelect = document.getElementById('formatSelect');
+      const toleranceEl = document.getElementById('tolerance');
+      const tolVal = document.getElementById('tolVal');
+      const floodFillEl = document.getElementById('floodFill');
+      const tileScaleEl = document.getElementById('tileScale');
+      const scaleVal = document.getElementById('scaleVal');
+      const rotDirEl = document.getElementById('rotDir');
+      const startOffsetEl = document.getElementById('startOffset');
+      const colorInput = document.getElementById('colorInput');
+      const makeInput = document.getElementById('makeInput');
+      const modelInput = document.getElementById('modelInput');
+      const exportNamePreview = document.getElementById('exportNamePreview');
+      const downloadSrfBtn = document.getElementById('downloadSrfBtn');
+      const downloadPngBtn = document.getElementById('downloadPngBtn');
+      const openTabBtn = document.getElementById('openTabBtn');
+      const statusText = document.getElementById('statusText');
+      const fallbackBox = document.getElementById('fallbackBox');
+      const fallbackImg = document.getElementById('fallbackImg');
+      const srfFileHint = document.getElementById('srfFileHint');
+
+      const cleanPreview = document.getElementById('cleanPreview');
+      const spinPreview = document.getElementById('spinPreview');
+      const spinTag = document.getElementById('spinTag');
+      const sheetCanvas = document.getElementById('sheetCanvas');
+      const rotLeftCornerBtn = document.getElementById('rotLeftCornerBtn');
+      const rotRightCornerBtn = document.getElementById('rotRightCornerBtn');
+
+      let sourceImage = null;
+      let croppedSprite = null;
+      let spinAngle = 0;
+      let lastFrameTime = null;
+      let currentBlobUrl = null;
+
+      function normalizeAngle(deg) {
+        const mod = ((deg % 360) + 360) % 360;
+        if (mod === 270) return -90;
+        return mod;
+      }
+
+      function stepOffset(deltaDeg) {
+        const current = parseInt(startOffsetEl.value, 10) || 0;
+        const next = normalizeAngle(current + deltaDeg);
+        startOffsetEl.value = String(next);
+        if (sourceImage) {
+          renderCleanPreview();
+          buildSpriteSheet();
+        }
+      }
+
+      rotLeftCornerBtn.addEventListener('click', () => stepOffset(-90));
+      rotRightCornerBtn.addEventListener('click', () => stepOffset(90));
+
+      function getBaseExportName() {
+        const parts = [colorInput.value, makeInput.value, modelInput.value]
+          .map((val) => val.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''))
+          .filter(Boolean);
+        return parts.length > 0 ? parts.join('_') : 'myvehicle';
+      }
+
+      function updateExportNames() {
+        const base = getBaseExportName();
+        const pngName = `${base}.png`;
+        const srfName = `${base}.srf`;
+        exportNamePreview.textContent = srfName;
+        downloadSrfBtn.textContent = `Download ${srfName}`;
+        downloadPngBtn.textContent = `Download ${pngName}`;
+        srfFileHint.textContent = srfName;
+      }
+
+      [colorInput, makeInput, modelInput].forEach((input) => {
+        input.addEventListener('input', updateExportNames);
+      });
+      updateExportNames();
+
+      // Dropzone interactions (mouse + keyboard accessibility)
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          fileInput.click();
+        }
+      });
+
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer && e.dataTransfer.files[0]) {
+          loadFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          loadFile(e.target.files[0]);
+        }
+      });
+
+      [formatSelect, toleranceEl, floodFillEl, tileScaleEl, rotDirEl, startOffsetEl].forEach((el) => {
+        el.addEventListener('input', () => {
+          tolVal.textContent = toleranceEl.value;
+          scaleVal.textContent = tileScaleEl.value + '%';
+          if (sourceImage) processImage();
+        });
+      });
+
+      function loadFile(file) {
+        const isSrf = file.name.toLowerCase().endsWith('.srf');
+        if (!isSrf && !file.type.startsWith('image/')) {
+          statusText.className = 'status error';
+          statusText.textContent = 'Please upload a valid PNG, JPG, WEBP, or Garmin .SRF file.';
+          return;
+        }
+
+        // Pre-fill Color / Make / Model if empty and filename follows color_make_model pattern
+        if (!colorInput.value && !makeInput.value && !modelInput.value) {
+          const stem = file.name.replace(/\.[^.]+$/, '');
+          const parts = stem.split('_').filter(Boolean);
+          if (parts.length === 3 && stem.toLowerCase() !== 'myvehicle') {
+            colorInput.value = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+            makeInput.value = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+            modelInput.value = parts[2].charAt(0).toUpperCase() + parts[2].slice(1);
+            updateExportNames();
+          }
+        }
+
+        if (isSrf) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              parseSrfFile(ev.target.result);
+            } catch (err) {
+              statusText.className = 'status error';
+              statusText.textContent = 'Invalid or unsupported .SRF file: ' + err.message;
+            }
+          };
+          reader.readAsArrayBuffer(file);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            sourceImage = img;
+            spinAngle = 0;
+            lastFrameTime = null;
+            processImage();
+          };
+          img.onerror = () => {
+            statusText.className = 'status error';
+            statusText.textContent = 'Could not decode that image file. Try another PNG or JPG.';
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Parse an existing Garmin "GARMIN BITMAP 01" .SRF file and extract Frame 0 (North/Up)
+      function parseSrfFile(arrayBuffer) {
+        const view = new DataView(arrayBuffer);
+        const bytes = new Uint8Array(arrayBuffer);
+        if (bytes.length < 95) {
+          throw new Error('File too small to be a valid Garmin .SRF.');
+        }
+
+        let magic = '';
+        for (let i = 0; i < 16; i++) {
+          magic += String.fromCharCode(bytes[i]);
+        }
+        if (magic !== 'GARMIN BITMAP 01') {
+          throw new Error('Missing GARMIN BITMAP 01 header.');
+        }
+
+        let offset = 16;
+        const readU32 = () => {
+          const v = view.getUint32(offset, true);
+          offset += 4;
+          return v;
+        };
+        const readU16 = () => {
+          const v = view.getUint16(offset, true);
+          offset += 2;
+          return v;
+        };
+        const skipPString = () => {
+          const len = readU32();
+          offset += len;
+        };
+
+        // Skip 4 header u32s + 3 PStrings with u32 tags
+        offset += 16;
+        skipPString();
+        offset += 4;
+        skipPString();
+        offset += 4;
+        skipPString();
+
+        // Read Section 1 (3D perspective strip, 36 frames across)
+        offset += 12; // 3x u32 section prefix
+        const height = readU16();
+        const width = readU16();
+        offset += 8; // bpp/flags (2) + stride (2) + reserved (4)
+
+        const pixelCount = width * height;
+        let alphaBytes = null;
+        let rgbOffset = null;
+
+        // Read sub-blocks (Tag 11 = Alpha Mask, Tag 1 = RGB555)
+        for (let b = 0; b < 2; b++) {
+          const tag = readU32();
+          const len = readU32();
+          if (tag === 11) {
+            alphaBytes = bytes.subarray(offset, offset + len);
+          } else if (tag === 1) {
+            rgbOffset = offset;
+          }
+          offset += len;
+        }
+
+        if (!alphaBytes || rgbOffset === null) {
+          throw new Error('Could not locate image pixel blocks inside .SRF.');
+        }
+
+        // Extract Frame 0 (first square tile on the left of the 36-frame strip)
+        const tileSize = height; // 80px standard
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = tileSize;
+        frameCanvas.height = tileSize;
+        const fCtx = frameCanvas.getContext('2d');
+        const outImg = fCtx.createImageData(tileSize, tileSize);
+        const out = outImg.data;
+
+        for (let y = 0; y < tileSize; y++) {
+          for (let x = 0; x < tileSize; x++) {
+            const srcIdx = y * width + x;
+            const dstIdx = (y * tileSize + x) * 4;
+
+            const rgb16 = view.getUint16(rgbOffset + srcIdx * 2, true);
+            const r5 = (rgb16 >> 11) & 0x1f;
+            const g5 = (rgb16 >> 6) & 0x1f;
+            const b5 = rgb16 & 0x1f;
+
+            // Expand 5-bit channels back to 8-bit RGB
+            out[dstIdx] = (r5 << 3) | (r5 >> 2);
+            out[dstIdx + 1] = (g5 << 3) | (g5 >> 2);
+            out[dstIdx + 2] = (b5 << 3) | (b5 >> 2);
+
+            // Convert Garmin alpha (0 = opaque, 128 = transparent) to standard 0-255 alpha
+            const gAlpha = Math.min(128, Math.max(0, alphaBytes[srcIdx]));
+            out[dstIdx + 3] = Math.round(((128 - gAlpha) / 128) * 255);
+          }
+        }
+        fCtx.putImageData(outImg, 0, 0);
+
+        // Match format dropdown to loaded SRF dimensions
+        formatSelect.value = width === 2881 ? '2881x160' : '2880x150';
+        toleranceEl.value = 0;
+        tolVal.textContent = '0';
+        startOffsetEl.value = '0';
+
+        const extractedImg = new Image();
+        extractedImg.onload = () => {
+          sourceImage = extractedImg;
+          spinAngle = 0;
+          lastFrameTime = null;
+          processImage();
+          statusText.className = 'status';
+          statusText.textContent = `Loaded .SRF (${width} × ${height} 3D strip) — ready to edit or re-export!`;
+        };
+        extractedImg.src = frameCanvas.toDataURL('image/png');
+      }
+
+      function renderCleanPreview() {
+        if (!croppedSprite) return;
+        const cCtx = cleanPreview.getContext('2d');
+        cCtx.clearRect(0, 0, 140, 140);
+        const offset = parseInt(startOffsetEl.value, 10) || 0;
+        drawRotatedTile(cCtx, croppedSprite, 70, 70, 120, 1.0, offset);
+      }
+
+      function colorDist(r1, g1, b1, r2, g2, b2) {
+        return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
+      }
+
+      function processImage() {
+        try {
+          const w = sourceImage.width;
+          const h = sourceImage.height;
+          const temp = document.createElement('canvas');
+          temp.width = w;
+          temp.height = h;
+          const ctx = temp.getContext('2d', { willReadFrequently: true });
+          ctx.drawImage(sourceImage, 0, 0);
+
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          const tol = parseInt(toleranceEl.value, 10);
+          const useFlood = floodFillEl.checked;
+
+          // Sample top-left pixel as background color
+          const bgR = data[0], bgG = data[1], bgB = data[2], bgA = data[3];
+
+          if (bgA > 10 && tol > 0) {
+            if (useFlood) {
+              const visited = new Uint8Array(w * h);
+              const stack = [];
+              for (let x = 0; x < w; x++) {
+                stack.push(x, (h - 1) * w + x);
+              }
+              for (let y = 0; y < h; y++) {
+                stack.push(y * w, y * w + (w - 1));
+              }
+              while (stack.length > 0) {
+                const idx = stack.pop();
+                if (visited[idx]) continue;
+                visited[idx] = 1;
+                const p = idx * 4;
+                if (colorDist(data[p], data[p + 1], data[p + 2], bgR, bgG, bgB) <= tol) {
+                  data[p + 3] = 0;
+                  const x = idx % w;
+                  const y = (idx - x) / w;
+                  if (x > 0 && !visited[idx - 1]) stack.push(idx - 1);
+                  if (x < w - 1 && !visited[idx + 1]) stack.push(idx + 1);
+                  if (y > 0 && !visited[idx - w]) stack.push(idx - w);
+                  if (y < h - 1 && !visited[idx + w]) stack.push(idx + w);
+                }
+              }
+            } else {
+              for (let i = 0; i < data.length; i += 4) {
+                if (colorDist(data[i], data[i + 1], data[i + 2], bgR, bgG, bgB) <= tol) {
+                  data[i + 3] = 0;
+                }
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+          }
+
+          // Find tight bounding box of non-transparent pixels
+          let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const a = data[(y * w + x) * 4 + 3];
+              if (a > 15) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+                found = true;
+              }
+            }
+          }
+
+          if (!found) {
+            minX = 0;
+            minY = 0;
+            maxX = w - 1;
+            maxY = h - 1;
+          }
+
+          const cropW = maxX - minX + 1;
+          const cropH = maxY - minY + 1;
+          const side = Math.max(cropW, cropH);
+
+          const square = document.createElement('canvas');
+          square.width = side;
+          square.height = side;
+          const sCtx = square.getContext('2d');
+          sCtx.drawImage(
+            temp,
+            minX, minY, cropW, cropH,
+            (side - cropW) / 2, (side - cropH) / 2, cropW, cropH
+          );
+          croppedSprite = square;
+
+          // Render Clean Preview (reflecting Initial Angle Offset)
+          renderCleanPreview();
+
+          buildSpriteSheet();
+
+          downloadSrfBtn.disabled = false;
+          downloadPngBtn.disabled = false;
+          openTabBtn.disabled = false;
+          statusText.className = 'status';
+          statusText.textContent = `Ready! ${sheetCanvas.width} × ${sheetCanvas.height} px sprite sheet & Garmin .SRF ready to download.`;
+        } catch (err) {
+          statusText.className = 'status error';
+          statusText.textContent = 'Processing error: ' + err.message;
+        }
+      }
+
+      function drawRotatedTile(ctx, img, cx, cy, tileSize, scaleRatio, angleDeg) {
+        const drawSize = tileSize * scaleRatio;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate((angleDeg * Math.PI) / 180);
+        ctx.drawImage(img, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        ctx.restore();
+      }
+
+      function buildSpriteSheet() {
+        if (!croppedSprite) return;
+        const isLegacy = formatSelect.value === '2881x160';
+        sheetCanvas.width = isLegacy ? 2881 : 2880;
+        sheetCanvas.height = isLegacy ? 160 : 150;
+
+        const ctx = sheetCanvas.getContext('2d');
+        ctx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        const scaleRatio = parseInt(tileScaleEl.value, 10) / 100;
+        const dir = rotDirEl.value === 'cw' ? 1 : -1;
+        const offset = parseInt(startOffsetEl.value, 10);
+
+        // Row 1: 36 frames of 80x80 (3D Perspective view)
+        for (let i = 0; i < 36; i++) {
+          const angle = offset + dir * i * 10;
+          drawRotatedTile(ctx, croppedSprite, i * 80 + 40, 40, 80, scaleRatio, angle);
+        }
+
+        if (isLegacy) {
+          // Row 2: Top-down frame at bottom-left (80x80) as specified by standard png2srf
+          drawRotatedTile(ctx, croppedSprite, 40, 120, 80, scaleRatio, offset);
+        } else {
+          // Row 2: 36 frames of 70x70 for newer Garmin units (2D Overhead view)
+          for (let i = 0; i < 36; i++) {
+            const angle = offset + dir * i * 10;
+            drawRotatedTile(ctx, croppedSprite, i * 70 + 35, 80 + 35, 70, scaleRatio, angle);
+          }
+        }
+
+        // Update Blob URL & fallback image for Google Sites iframe compatibility
+        sheetCanvas.toBlob((blob) => {
+          if (!blob) return;
+          if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+          currentBlobUrl = URL.createObjectURL(blob);
+          fallbackImg.src = currentBlobUrl;
+        }, 'image/png');
+      }
+
+      // Smooth, slow 360° rotation loop (36 degrees/second = 10 seconds per full rotation)
+      function animatePreview(timestamp) {
+        if (croppedSprite) {
+          if (lastFrameTime !== null) {
+            const deltaSec = (timestamp - lastFrameTime) / 1000;
+            spinAngle = (spinAngle + deltaSec * 36) % 360;
+          }
+          lastFrameTime = timestamp;
+
+          const spCtx = spinPreview.getContext('2d');
+          spCtx.clearRect(0, 0, 140, 140);
+          const dir = rotDirEl.value === 'cw' ? 1 : -1;
+          const offset = parseInt(startOffsetEl.value, 10);
+          const angle = offset + dir * spinAngle;
+          drawRotatedTile(spCtx, croppedSprite, 70, 70, 120, 0.9, angle);
+          spinTag.textContent = `Slow 360° Preview (${Math.round(spinAngle)}°)`;
+        } else {
+          lastFrameTime = null;
+        }
+        requestAnimationFrame(animatePreview);
+      }
+      requestAnimationFrame(animatePreview);
+
+      // Native browser encoder for Garmin Vehicle .SRF binary format ("GARMIN BITMAP 01")
+      function buildSrfBlob() {
+        const isLegacy = formatSelect.value === '2881x160';
+        const w3d = isLegacy ? 2881 : 2880;
+        const h3d = 80;
+        const w2d = isLegacy ? 2881 : 2520;
+        const h2d = isLegacy ? 80 : 70;
+
+        const ctx = sheetCanvas.getContext('2d', { willReadFrequently: true });
+        const img3d = ctx.getImageData(0, 0, w3d, h3d);
+        const img2d = ctx.getImageData(0, 80, w2d, h2d);
+
+        // Calculate exact buffer byte length
+        // File header: 16 ("GARMIN BITMAP 01") + 16 (4x u32) + 7 (PString "578") + 4 (u32)
+        //              + 8 (PString version) + 4 (u32) + 16 (PString "006-D0578-00") = 71 bytes
+        const fileHeaderSize = 71;
+        const sectionHeaderSize = 24; // 12 (3x u32) + 2 (h) + 2 (w) + 2 ([16,8]) + 2 (stride) + 4 (0)
+        const sec3dSize = sectionHeaderSize + (8 + w3d * h3d) + (8 + w3d * h3d * 2);
+        const sec2dSize = sectionHeaderSize + (8 + w2d * h2d) + (8 + w2d * h2d * 2);
+        const padSize = isLegacy ? 136 : 56;
+        const totalSize = fileHeaderSize + sec3dSize + sec2dSize + padSize + 1;
+
+        const buffer = new ArrayBuffer(totalSize);
+        const view = new DataView(buffer);
+        const bytes = new Uint8Array(buffer);
+        let offset = 0;
+
+        function writeAscii(str) {
+          for (let i = 0; i < str.length; i++) {
+            bytes[offset++] = str.charCodeAt(i);
+          }
+        }
+
+        function writeU32(val) {
+          view.setUint32(offset, val, true);
+          offset += 4;
+        }
+
+        function writeU16(val) {
+          view.setUint16(offset, val, true);
+          offset += 2;
+        }
+
+        function writePString(str) {
+          writeU32(str.length);
+          writeAscii(str);
+        }
+
+        // 1. Garmin SRF File Header
+        writeAscii('GARMIN BITMAP 01');
+        writeU32(4);
+        writeU32(4);
+        writeU32(2);
+        writeU32(5);
+        writePString('578');
+        writeU32(6);
+        writePString(isLegacy ? '2.00' : '2.20');
+        writeU32(7);
+        writePString('006-D0578-00');
+
+        // Helper to write a 3D or 2D perspective image block (Alpha Mask + 16-bit RGB555)
+        function writeImageSection(imgData, width, height) {
+          // Section Header
+          writeU32(0);
+          writeU32(16);
+          writeU32(0);
+          writeU16(height);
+          writeU16(width);
+          bytes[offset++] = 16;
+          bytes[offset++] = 8;
+          writeU16(width * 2);
+          writeU32(0);
+
+          const pixelCount = width * height;
+          const rgba = imgData.data;
+
+          // Alpha Mask Block: Tag 11, length = width * height
+          // Garmin alpha scale: 0 = fully opaque, 128 = fully transparent
+          writeU32(11);
+          writeU32(pixelCount);
+          for (let i = 0; i < pixelCount; i++) {
+            const a = rgba[i * 4 + 3];
+            bytes[offset++] = Math.round(((255 - a) / 255) * 128);
+          }
+
+          // RGB Color Block: Tag 1, length = width * height * 2
+          // 16-bit little-endian pixel format: rrrrrggggg0bbbbb (5-5-1-5)
+          writeU32(1);
+          writeU32(pixelCount * 2);
+          for (let i = 0; i < pixelCount; i++) {
+            const p = i * 4;
+            const r5 = (rgba[p] >> 3) & 0x1f;
+            const g5 = (rgba[p + 1] >> 3) & 0x1f;
+            const b5 = (rgba[p + 2] >> 3) & 0x1f;
+            const rgb16 = (r5 << 11) | (g5 << 6) | b5;
+            view.setUint16(offset, rgb16, true);
+            offset += 2;
+          }
+        }
+
+        // 2. Write 3D Perspective Section & 2D Overhead Section
+        writeImageSection(img3d, w3d, h3d);
+        writeImageSection(img2d, w2d, h2d);
+
+        // 3. Footer Padding (0xFF) & Checksum Byte (sum of all bytes % 256 === 0)
+        for (let i = 0; i < padSize; i++) {
+          bytes[offset++] = 0xff;
+        }
+
+        let sum = 0;
+        for (let i = 0; i < offset; i++) {
+          sum = (sum + bytes[i]) & 0xff;
+        }
+        bytes[offset++] = (256 - sum) & 0xff;
+
+        return new Blob([buffer], { type: 'application/octet-stream' });
+      }
+
+      // Primary download: Direct binary Garmin .SRF file
+      downloadSrfBtn.addEventListener('click', () => {
+        try {
+          const filename = `${getBaseExportName()}.srf`;
+          const srfBlob = buildSrfBlob();
+          const url = URL.createObjectURL(srfBlob);
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+          statusText.className = 'status';
+          statusText.textContent = `Downloaded ${filename} (${(srfBlob.size / 1024).toFixed(1)} KB) — ready for your Garmin GPS!`;
+        } catch (err) {
+          statusText.className = 'status error';
+          statusText.textContent = 'SRF encoding error: ' + err.message;
+        }
+      });
+
+      // Secondary download: Raw Sprite Sheet .PNG
+      downloadPngBtn.addEventListener('click', () => {
+        const filename = `${getBaseExportName()}.png`;
+        sheetCanvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+          // Reveal the direct right-click save box just in case the Google Sites iframe blocks downloads
+          fallbackBox.style.display = 'block';
+        }, 'image/png');
+      });
+
+      // Open in new tab fallback for strict iframe environments
+      openTabBtn.addEventListener('click', () => {
+        if (currentBlobUrl) {
+          window.open(currentBlobUrl, '_blank', 'noopener,noreferrer');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
